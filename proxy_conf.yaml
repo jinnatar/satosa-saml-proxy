@@ -1,0 +1,44 @@
+---
+BASE: !ENV PROXY_HOST
+
+COOKIE_STATE_NAME: "SATOSA_STATE"
+CONTEXT_STATE_DELETE: true
+STATE_ENCRYPTION_KEY: !ENV ENCRYPTION_KEY
+
+cookies_samesite_compat:
+  - ["SATOSA_STATE", "SATOSA_STATE_LEGACY"]
+
+INTERNAL_ATTRIBUTES: "internal_attributes.yaml"
+
+BACKEND_MODULES:
+  - "kanidm_backend.yaml"
+
+FRONTEND_MODULES:
+  - "saml2_frontend.yaml"
+
+LOGGING:
+  version: 1
+  formatters:
+    simple:
+      format: "[%(asctime)s][%(levelname)s][%(name)s.%(funcName)s] %(message)s"
+  handlers:
+    stdout:
+      class: logging.StreamHandler
+      stream: "ext://sys.stdout"
+      level: DEBUG
+      formatter: simple
+  loggers:
+    satosa:
+      level: DEBUG
+    saml2:
+      level: DEBUG
+    oidcendpoint:
+      level: DEBUG
+    pyop:
+      level: DEBUG
+    oic:
+      level: DEBUG
+  root:
+    level: DEBUG
+    handlers:
+      - stdout

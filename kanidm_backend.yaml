@@ -1,0 +1,28 @@
+---
+module: satosa.backends.openid_connect.OpenIDConnectBackend
+name: kanidm
+config:
+  provider_metadata:
+    issuer: !ENV OIDC_ISSUER_URL
+  client:
+    auth_req_params:
+      response_type: code
+      scope: [openid, profile, email]
+    client_metadata:
+      client_id: !ENV OIDC_CLIENT_ID
+      client_secret: !ENV OIDC_CLIENT_SECRET
+      redirect_uris: [<base>/<name>]
+    userinfo_request_method: GET
+  entity_info:
+    organization:
+      display_name:
+        - ["Kanidm", "en"]
+      name:
+        - ["Kanidm", "en"]
+      url:
+        - [!ENV OIDC_INFO_URL, "en"]
+    ui_info:
+      description:
+        - ["Kanidm", "en"]
+      display_name:
+        - ["Kanidm", "en"]
