@@ -1,21 +1,14 @@
 ---
 module: satosa.frontends.saml2.SAMLFrontend
-name: Saml2IDP
+name: !ENV SAML_NAME
 config:
-  #acr_mapping:
-  #  "": "urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified"
-  #  "https://accounts.google.com": "http://eidas.europa.eu/LoA/low"
-
   endpoints:
     single_sign_on_service:
       'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST': sso/post
       'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect': sso/redirect
 
-  #common_domain_cookie:
-  #  domain: .example.com
-
   entityid_endpoint: true
-  enable_metadata_reload: false
+  enable_metadata_reload: true
 
   idp_config:
     organization: {display_name: '', name: '', url: ''}
@@ -23,10 +16,10 @@ config:
     - {contact_type: technical, email_address: 'mailto:technical@example.com', given_name: Technical}
     key_file: saml.key
     cert_file: saml.crt
-    #metadata:
-#  local: [sp.xml]
+    metadata:
+      local: [!ENV SAML_METADATA]
 
-    entityid: <base_url>/<name>/proxy.xml
+    entityid: <base_url>/<name>/metadata.xml
     accepted_time_diff: 60
     service:
       idp:

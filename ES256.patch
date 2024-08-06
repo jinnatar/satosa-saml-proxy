@@ -1,0 +1,15 @@
+diff --git a/src/idpyoidc/message/oidc/__init__.py b/src/idpyoidc/message/oidc/__init__.py
+index a6da506..6409de4 100644
+--- a/src/idpyoidc/message/oidc/__init__.py
++++ b/src/idpyoidc/message/oidc/__init__.py
+@@ -942,8 +942,8 @@ class ProviderConfigurationResponse(ResponseMessage):
+                 "token_endpoint_auth_signing_alg_values_supported"
+             )
+ 
+-        if "RS256" not in self["id_token_signing_alg_values_supported"]:
+-            raise ValueError("RS256 missing from id_token_signing_alg_values_supported")
++        if "ES256" not in self["id_token_signing_alg_values_supported"]:
++            raise ValueError("ES256 missing from id_token_signing_alg_values_supported")
+ 
+         if not parts.query and not parts.fragment:
+             pass

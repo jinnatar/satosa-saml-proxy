@@ -1,28 +1,27 @@
 ---
-module: satosa.backends.openid_connect.OpenIDConnectBackend
-name: kanidm
+# At the time of writing (2024) the IdpyOIDCBackend is not yet part of
+# a SATOSA release (8.4.0 does not include it.)
+# You will need to run SATOSA from git HEAD to use this in the meanwhile.
+# There are other OIDC backends but they do not support PKCE.
+module: satosa.backends.idpy_oidc.IdpyOIDCBackend
+name: !ENV OIDC_NAME
 config:
-  provider_metadata:
-    issuer: !ENV OIDC_ISSUER_URL
+  client_type: oidc
   client:
-    auth_req_params:
-      response_type: code
-      scope: [openid, profile, email]
-    client_metadata:
-      client_id: !ENV OIDC_CLIENT_ID
-      client_secret: !ENV OIDC_CLIENT_SECRET
-      redirect_uris: [<base>/<name>]
-    userinfo_request_method: GET
-  entity_info:
-    organization:
-      display_name:
-        - ["Kanidm", "en"]
-      name:
-        - ["Kanidm", "en"]
-      url:
-        - [!ENV OIDC_INFO_URL, "en"]
-    ui_info:
-      description:
-        - ["Kanidm", "en"]
-      display_name:
-        - ["Kanidm", "en"]
+    provider_info:
+      issuer: !ENV OIDC_ISSUER_URL
+
+    scopes_supported: [openid, profile, email]
+    response_types_supported: [code]
+    id_token_signing_alg_values_supported: [ES256]
+    subject_types_supported: [public]
+
+    client_id: !ENV OIDC_CLIENT_ID
+    client_secret: !ENV OIDC_CLIENT_SECRET
+    redirect_uris: [<base_url>/<name>]
+    add_ons:
+      pkce:
+        function: idpyoidc.client.oauth2.add_on.pkce.add_support
+        kwargs:
+          code_challenge_length: 64
+          code_challenge_method: S256

@@ -4,12 +4,11 @@ attributes:
     openid: [nickname]
     saml: [displayName]
   edupersontargetedid:
-    facebook: [id]
-    linkedin: [id]
-    orcid: [edupersontargetedid]
-    github: [id]
     openid: [sub]
     saml: [eduPersonTargetedID]
+  username:
+    openid: [preferred_username]
+    saml: [uid]
   givenname:
     openid: [given_name]
     saml: [givenName]
