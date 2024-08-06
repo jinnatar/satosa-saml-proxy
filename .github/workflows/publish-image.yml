@@ -1,0 +1,56 @@
+---
+name: Docker image
+
+on: push
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get the release channel
+        id: get_channel
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == 'refs/heads/main' ]]; then
+            echo "channel=latest" >> $GITHUB_OUTPUT
+            echo "version=main_${GITHUB_SHA::6}" >> $GITHUB_OUTPUT
+          elif [[ "$GITHUB_REF" == "refs/heads/"* ]]; then
+            echo "version=${GITHUB_REF/refs\/heads\//}_${GITHUB_SHA::6}" >> $GITHUB_OUTPUT
+          elif [[ "$GITHUB_REF" == "refs/tags/"* ]]; then
+            echo "channel=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ steps.get_channel.outputs.channel }}
+            type=raw,value=${{ steps.get_channel.outputs.version }}
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
