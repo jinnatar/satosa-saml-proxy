@@ -11,6 +11,15 @@ i.e. How to connect legacy web apps that only support SAML to be backed by Kanid
 2. Rewrite env config & the SATOSA configs for dynamic routing so that multiple apps can be routed to different OIDC clients. In the meanwhile you can configure multiple apps to use the same proxy, but then you can't control via claim maps on the Kanidm side who is eligible for what app.
 3. Get rid of the `ES256.patch` hack once idpyoidc no longer forces RS256.
 
+## The container
+
+The container built at `ghcr.io/jinnatar/satosa-saml-proxy:latest` is a proof of concept using the SATOSA configs in the repo. The guides below will assume you are using it, but nothing prevents you from using the same configs and ENV config with any other supported SATOSA installation method. I am using the container myself in my environment and have a vested interest in keeping it going and tested.
+
+The caveats with the container and/or trying to go without it:
+- The currently released version of SATOSA, 8.4.0 is over a year old and does not include their new and improved OIDC module. The better module is required for PKCE support, which is why the container is built from their git HEAD instead of a release.
+- The main dependency for their new OIDC module is idpy-oidc. Unfortunately it has an issue that prevents using ES256 for signing. The container has a patch that instead enforces ES256, but it's unsuitable to upstream as a proper fix. This patching will be removed once https://github.com/IdentityPython/idpy-oidc/issues/110 is resolved. You could use `ES256.patch` to replicate this bubblegum fix outside the container.
+- The containers are not version tagged, since there is no upstream version of SATOSA that fulfills the requirements. They are however tagged to specific commits for your convenience if you do not wish to follow `:latest`.
+
 ## Step by step guides for usage
 
 SAML is a bit *involved* so we need to prep a persistent certificate and provide metadata for the system you will auth for. We'll first cover generic steps and then go over them again with a practical example setting up SSO for Ceph.
