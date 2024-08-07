@@ -3,3 +3,4 @@
 *.xml
 *.env
 !example.env
+!dummy-metadata.xml

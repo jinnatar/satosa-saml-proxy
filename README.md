@@ -22,8 +22,8 @@ SAML is a bit *involved* so we need to prep a persistent certificate and provide
         -keyout saml.key -out saml.crt -subj "/SN=saml.example.com/"
    ```
 1. Give read access to your key: `chown :999 saml.key && chmod g+r saml.key` .. This way SATOSA is limited to only read.
-1. Get your target SAML side system's metadata XML file. How to do this is specific to the app you're setting up! This isn't just a static file, it will need details specific to your installation so it's common to have an endpoint you can `curl` to generate it. You may not be able to generate it until you've registered the proxy's metadata on the app side, in this case skip ahead until the proxy is running and do these steps after.
-1. Once you have your metadata XML file, make it available to your container, for example via a volume.
+1. Get your target SAML side system's metadata XML file. How to do this is specific to the app you're setting up! This isn't just a static file, it will need details specific to your installation so it's common to have an endpoint you can `curl` to generate it. You may not be able to generate it until you've registered the proxy's metadata on the app side, in this case leave `SAML_METADATA=dummy-metadata.xml` to get the proxy running first and then circle back once you get the real data.
+1. Once you have your metadata XML file, make it available to your container, for example via a volume. The dummy data is already available.
 2. Configure the ENV variables that will tweak the provided SATOSA configs. You can edit the provided `example.env` file and feed it to Docker via the `--env-file` flag. Make sure to **not** quote values if using that flag. Explanations below:
    ```shell
    ENCRYPTION_KEY=0xDEADBEEF  # Key used to encrypt state in transit. Could generate with `openssl rand -base64 32`  
@@ -32,20 +32,19 @@ SAML is a bit *involved* so we need to prep a persistent certificate and provide
    OIDC_ISSUER_URL=https://idm.example.com/oauth2/openid/your-client-id  # Full URL to the discovery endpoint  
    OIDC_NAME=unique_oidc_name  # A unique id used for this OIDC backend in SATOSA. Uniqueness becomes relevant if you configure multiple on the same proxy.  
    PROXY_BASE_URL=https://saml.example.com  # Where your proxy lives. **must** be https, must be the root of a host, must match the CN in your cert from step 1.  
-   SAML_METADATA="your-app-metadata.xml"  # A path to your app SAML metadata file. The working directory of the provided image is `/etc/satosa` so the relative path example here would expect the file to be on the container at `/etc/satosa/your-app-metadata.xml`. If you can't get this until the proxy is running and you've registered it in the app, set to an empty string and then go back 2 steps.  
+   SAML_METADATA="dummy-metadata.xml"  # A path to your app SAML metadata file. The working directory of the provided image is `/etc/satosa` so the relative path example here would expect the file to be on the container at `/etc/satosa/dummy-metadata.xml`. If you can't get this until the proxy is running and you've registered it in the app, use dummy-metadata.xml as a workaround to boot the proxy without it.  
    SAML_NAME=unique_saml_name  # A unique id used for this SAML frontend in SATOSA. Uniqueness becomes relevant if you configure multiple on the same proxy.
    ```
 3. Launch the proxy. This depends on your container orchestration, but a simple testing example is provided below. **This is not enough, you need to get https working which is outside the scope of this guide.
    ```shell
    # Assuming a reverse proxy will handle TLS from https://saml.example.com
-   docker run --rm -it \
-    --env-file example.env -v $PWD/etc/satosa -p 8080:80 \
+   docker run --rm -it -p 8080:80 \
+    --env-file example.env \
+    -v $PWD/saml.crt:/etc/satosa/saml.crt -v $PWD/saml.key:/etc/satosa/saml.key  \
+    -v $PWD/your-app-metadata.xml:/etc/satosa/your-app-metadata.xml \
     ghcr.io/jinnatar/satosa-saml-proxy:latest
 
-   # Let gunicorn handle TLS:
-   docker run --rm -it \
-    --env-file example.env -v $PWD/etc/satosa -p 8080:80 \
-    ghcr.io/jinnatar/satosa-saml-proxy:latest \
+   # Let gunicorn handle TLS, otherwise the same, just add at the end after the image name:
     --keyfile=<https key> --certfile=<https cert>
    ```
 4. Register the proxy with your app to enable SAML based SSO. This is highly dependent on your app but the proxy endpoint that spits out your bespoke metadata will be: `https://saml.example.com/unique_saml_name/metadata.xml`
@@ -70,23 +69,17 @@ SAML is a bit *involved* so we need to prep a persistent certificate and provide
    OIDC_ISSUER_URL=https://idm.example.com/oauth2/openid/ceph
    OIDC_NAME=oidc_ceph
    PROXY_BASE_URL=https://saml.example.com
-   SAML_METADATA="" # We don't have this yet
+   SAML_METADATA=dummy-metadata.xml
    SAML_NAME=saml_ceph
    ```
 1. Launch the proxy with your configured ENV:
    ```shell
-   # Assuming a reverse proxy will handle TLS from https://saml.example.com
-   docker run --rm -it \
-    --env-file ceph.env -v $PWD/etc/satosa -p 8080:80 \
+   docker run --rm -it -p 8080:80 \
+    --env-file ceph.env \
+    -v $PWD/saml.crt:/etc/satosa/saml.crt -v $PWD/saml.key:/etc/satosa/saml.key  \
     ghcr.io/jinnatar/satosa-saml-proxy:latest
-
-   # Let gunicorn handle TLS:
-   docker run --rm -it \
-    --env-file ceph.env -v $PWD/etc/satosa -p 8080:80 \
-    ghcr.io/jinnatar/satosa-saml-proxy:latest \
-    --keyfile=<https key> --certfile=<https cert>
    ```
-1. Register the proxy with Ceph, giving it the metadata endpoint and an attribute field name to expect for the username.
+1. Register the proxy with Ceph, giving it the Ceph URL, SAML metadata endpoint and an attribute field name to expect for the username.
    ```shell
    ceph dashboard sso setup saml2 https://ceph.example.com https://saml.example.com/saml_ceph/metadata.xml urn:oid:0.9.2342.19200300.100.1.1
    ```
@@ -94,5 +87,13 @@ SAML is a bit *involved* so we need to prep a persistent certificate and provide
    ```shell
    curl https://ceph.example.com/auth/saml2/metadata > ceph-metadata.xml
    ```
-   And can now amend `ceph.env` with: `SAML_METADATA=ceph-metadata.xml`
+   And can now amend `ceph.env` with: `SAML_METADATA=ceph-metadata.xml` and restart the proxy, this time adding an extra mount for the real Ceph metadata:
+   ```shell
+   docker run --rm -it -p 8080:80 \
+    --env-file ceph.env \
+    -v $PWD/saml.crt:/etc/satosa/saml.crt -v $PWD/saml.key:/etc/satosa/saml.key  \
+    -v $PWD/ceph-metadata.xml:/etc/satosa/ceph-metadata.xml \
+    ghcr.io/jinnatar/satosa-saml-proxy:latest
+    ```
+
 1. Restart the proxy and go test Ceph SSO!
