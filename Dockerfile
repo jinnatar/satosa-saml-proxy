@@ -1,19 +1,18 @@
-FROM python:3.12-slim-bookworm
+FROM python:3.12-alpine
 
 # runtime dependencies
 # Run as uid:gid 999:999 to avoid conferring default UID 1000 permissions to key material
 RUN set -eux; \
-	groupadd -g 999 satosa; \
-	useradd -m -g 999 -u 999 satosa; \
-	apt-get update; \
-	apt-get install -y --no-install-recommends \
+	delgroup ping ; \
+	addgroup -g 999 satosa; \
+	adduser -g 999 -Su 999 satosa; \
+	apk update; \
+	apk add --no-cache \
 		jq \
 		libxml2-utils \
-		xmlsec1 \
+		xmlsec \
 		git \
-		patch \
 	; \
-	rm -rf /var/lib/apt/lists/*; \
 	pip install --no-cache-dir \
 		yq \
 	;
