@@ -9,7 +9,7 @@ i.e. How to connect legacy web apps that only support SAML to be backed by Kanid
 ## TODO items on the roadmap
 1. Add log level configuration via ENV. It's now hardcoded to debug.
 2. Rewrite env config & the SATOSA configs for dynamic routing so that multiple apps can be routed to different OIDC clients. In the meanwhile you can configure multiple apps to use the same proxy, but then you can't control via claim maps on the Kanidm side who is eligible for what app.
-3. Get rid of the `ES256.patch` hack once idpyoidc no longer forces RS256.
+3. Get rid of the idpyoidc PR fork use once they no longer force RS256.
 
 ## The container
 
