@@ -5,6 +5,9 @@ on:
   pull_request:
   release:
     types: [published]
+  push:
+    branches:
+      - 'main'
 
 env:
   REGISTRY: ghcr.io
@@ -37,6 +40,10 @@ jobs:
           elif [[ "$GITHUB_REF" == "refs/pull/"* ]]; then
             # Tag PRs only by PR number & branch to pollute registry less on force pushes
             echo "version=pr${GITHUB_REF_NAME/\/merge}_${GITHUB_HEAD_REF}" >> $GITHUB_OUTPUT
+          else
+            # We're on a push to main post-PR, stable git relevant tag only
+            # Could add a channel=dev but then some poor sucker might actually use it
+            echo "hash=main_${GITHUB_SHA::6}" >> $GITHUB_OUTPUT
           fi
 
       - name: Extract metadata (tags, labels) for Docker
