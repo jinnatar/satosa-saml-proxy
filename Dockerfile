@@ -18,7 +18,8 @@ RUN set -eux; \
 		jq \
 		libxml2-utils \
 		xmlsec \
-    git  # Only needed until we have a non-git idpyoidc ref
+    git
+# ^ Only needed until we have a non-git idpyoidc ref
 
 
 RUN pip install --no-cache-dir \
